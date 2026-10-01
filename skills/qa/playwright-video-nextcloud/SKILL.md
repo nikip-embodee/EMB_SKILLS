@@ -66,6 +66,10 @@ Do not delete or move the local videos — they are the primary evidence artifac
 ### Step 5: Upload
 
 ```bash
+# One batch of runs -> one TEST-RUN-YYYY-MM-DD-HH-mm folder holding that batch's videos and traces
+node cli/upload-nextcloud.mjs --verify --json --include webm --include zip \
+  --remote-dir TEST-RUN-2026-10-01-15-27 ./run-artifacts
+
 # Structured: mirror the local tree into a dated run folder
 node cli/upload-nextcloud.mjs --remote-dir "bugzy/2026-10-01-smoke" --verify --json test-results
 
@@ -73,8 +77,15 @@ node cli/upload-nextcloud.mjs --remote-dir "bugzy/2026-10-01-smoke" --verify --j
 node cli/upload-nextcloud.mjs --flat --json test-results
 ```
 
-- Directory arguments are mirrored including their own name: `--remote-dir bugzy/run-1 test-results` uploads to `bugzy/run-1/test-results/<test>/video.webm`. Parent folders are created with `MKCOL` as needed.
-- `--flat` writes every file directly into `--remote-dir`; use it for upload-only shares, where subfolder writes are rejected.
+Batch convention used by the QA team: each run batch is uploaded to a folder named `TEST-RUN-YYYY-MM-DD-HH-mm`,
+holding one video per test named `<TC-id>-<slug>.webm` plus the matching `<TC-id>-<slug>.zip` trace. The
+Zephyr execution comment for a case references that relative path, e.g.
+`TEST-RUN-2026-10-01-15-30/TC-031-create-new-layout-with-name-number-name-elements-cm-centered.webm`,
+so keep the folder label and the file names exactly as reported by the run.
+
+- Directory arguments are mirrored including their own name: `--remote-dir bugzy/run-1 test-results` uploads to `bugzy/run-1/test-results/<test>/video.webm`. Every parent folder is created with `MKCOL` before the file is written.
+- `--include` defaults to `.webm`; add `--include zip` to send traces in the same pass.
+- `--flat` writes every file directly into `--remote-dir`; needed only for upload-only shares, where subfolder writes are rejected.
 - `--verify` re-reads each file with `PROPFIND` and compares the size. On upload-only shares verification is impossible (`PROPFIND` → 405) and the report says so instead of failing.
 - Re-running is safe: `MKCOL` on an existing folder (`405`) is tolerated and an existing file is replaced. On upload-only shares Nextcloud instead stores a second copy with a numeric suffix — check before re-uploading.
 - Exit codes: `0` all files uploaded, `1` upload failures (details in `failures[]`), `2` configuration error.
@@ -97,5 +108,6 @@ State the share link, the remote folder, uploaded/failed counts, the local → r
 
 ## Notes
 
-- The team's configured share (`https://nextcloud.embodee.com/s/<token>`) is an **upload-only (file drop)** share: flat uploads to the share root succeed, subfolder uploads and `PROPFIND` do not. Use `--flat`, and clean up old evidence in the Nextcloud UI since the API cannot delete files there.
+- The team's share (`https://nextcloud.embodee.com/s/<token>`) is a normal public share with **upload + edit** permission: subfolders work (`MKCOL` plus `PUT` inside) and `--verify` works. `DELETE` returns `403`, so obsolete evidence has to be removed in the Nextcloud UI. Verified 2026-10-01 with 96 files across seven `TEST-RUN-…` folders, all created and size-verified.
+- If a share is switched back to upload-only ("File drop"), subfolder writes fail (`400 A nickname header is required when uploading subfolders`, or `409 Files cannot be created in non-existent collections` when `X-NC-Nickname` is sent — Nextcloud also files such uploads under a folder named after the nickname). Use `--flat` on those shares.
 - Endpoint, header, and legacy-endpoint details: [references/nextcloud-public-webdav.md](references/nextcloud-public-webdav.md).
