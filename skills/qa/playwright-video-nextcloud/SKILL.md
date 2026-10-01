@@ -28,8 +28,8 @@ node cli/selftest.mjs
 Resolved in this order (first hit wins):
 
 1. Flags: `--base-url`, `--token`, `--share-link`, `--password`/`--password-env`/`--password-stdin`.
-2. `NEXTCLOUD_BASE_URL` + `NEXTCLOUD_SHARE_TOKEN` + `NEXTCLOUD_SHARE_PASSWORD`.
-3. `NEXTCLOUD_SHARED_FOLDER_LINK` (origin and token are parsed out of the `/s/<token>` link) + `NEXTCLOUD_SHARED_PASS`.
+2. `NEXTCLOUD_BASE_URL` + `NEXTCLOUD_SHARE_TOKEN` + `NEXTCLOUD_SHARE_PASSWORD` — this is how the team's share is configured, so no extra setup is needed.
+3. Optional alternative, for teams that store a share link instead of separate fields: `NEXTCLOUD_SHARED_FOLDER_LINK` (origin and token are parsed out of the `/s/<token>` link) + `NEXTCLOUD_SHARED_PASS`. Not configured for this team.
 
 Rules:
 
